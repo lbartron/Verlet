@@ -19,7 +19,7 @@ int main()
     */
     const int windowHeight = 1080;
     const int windowWidth = 1920;
-    const int maxObjects = 8000;
+    const int maxObjects = 12000;
 
     sf::ContextSettings settings;
     //for smoothing out jagged edges of shapes
@@ -118,15 +118,18 @@ int main()
         double elapsedSeconds = std::chrono::duration<double>(now - startTime).count();
 
         //spawnTimer >= spawnInterval
+        const int batchSize = 10;
         if(engine.getObjectCount() <= maxObjects && (elapsedSeconds - lastSpawnTime) >= spawnInterval){
-            MovingObject& temp = engine.addObject(position, random.randint(3, 5));
-            float x = random.randint(-500,500);
-            float y = random.randint(50, 300);
-            temp.setVelocity(sf::Vector2f{x, y}, fixedDeltaT);
-            sf::Color customColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255));
-            temp.getShape().setFillColor(customColor);
-            //spawnTimer = 0.0f;
-            lastSpawnTime = elapsedSeconds;
+            for(int i = 0; i < batchSize && engine.getObjectCount() < maxObjects; i++){
+                MovingObject& temp = engine.addObject(position, random.randint(3, 5));
+                float x = random.randint(-500,500);
+                float y = random.randint(50, 300);
+                temp.setVelocity(sf::Vector2f{x, y}, fixedDeltaT);
+                //sf::Color customColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255));
+                //temp.getShape().setFillColor(customColor);
+                //spawnTimer = 0.0f;
+                lastSpawnTime = elapsedSeconds;
+            }
         }
         //start = std::chrono::high_resolution_clock::now();
 
