@@ -30,7 +30,7 @@ private:
             //globalCount++;
         }
     }
-//
+
     void applyCollisions(){
         const uint64_t objectCount = objectList.size();
         const float coefficientOfRestitution = 0.70f;
@@ -141,7 +141,7 @@ public:
     //Update all objects in objectList with new positions and variables/
     void update(float deltaT){
         //This will loop through each object, and then all other objects positions will be updated after this one moves?
-        applyGravity();
+        //applyGravity();
         updateObjects(deltaT);
         grid.applyCollisions(objectList);
         applyEdgeCollisions();
@@ -153,11 +153,28 @@ public:
         }   
     }
 
+    /*
     void draw(){
         window.draw(boundaryCircle);
         for(MovingObject& object : objectList){
             window.draw(object.getShape());
             //globalCount++;
+        }
+    }
+    */
+
+    void draw(){
+        window.draw(boundaryCircle);
+        sf::CircleShape shape;
+        shape.setPointCount(8);
+        shape.setFillColor(sf::Color::White);
+        
+        for(const auto& object : objectList){
+            float radius = object.getRadius();
+            shape.setRadius(radius);
+            shape.setOrigin(radius, radius);
+            shape.setPosition(object.getPosition());
+            window.draw(shape);
         }
     }
 
