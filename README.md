@@ -11,9 +11,8 @@
 Verlet Integration is a method used to simulate the motion of particles in physics, commonly used for video game physics or the simulation of rigid bodies. Unlike traditional methods which calculate velocity then update a position, Verlet Integration updates a position based on previous positions and the forces acting on the object.
 
 **Equation**
-$$
-P_{n+1}= 2P_{n}-P_{n-1}+a_{n}*\Delta t^{2}
-$$
+![equation](https://latex.codecogs.com/svg.image?&space;P_{n&plus;1}=2P_{n}-P_{n-1}&plus;a_{n}*\Delta&space;t^{2})
+
 Where:
 - $P$ is the position of the particle at time $n$ 
 - $a$ is the acceleration at position $n$
