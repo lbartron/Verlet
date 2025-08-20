@@ -6,8 +6,6 @@
 #include "MovingObject.hpp"
 #include "GridCollision.hpp"
 
-//size_t globalCount = 0;
-
 class Engine{
 private:
     std::vector<MovingObject> objectList;
@@ -16,21 +14,28 @@ private:
     sf::CircleShape boundaryCircle;
     GridCollision grid;
     float boundaryRadius = (window.getSize().y / 2.f);
+    sf::VertexArray particleVertexes;
 
     void updateObjects(float deltaT){
         for(MovingObject& object : objectList){
             object.update(deltaT);
-            //globalCount++;
         }
     }
 
     void applyGravity(){
         for(MovingObject& object : objectList){
             object.addAcceleration(gravity);
-            //globalCount++;
         }
     }
 
+    void initBoundaryCirlce(int radius){
+        boundaryCircle.setRadius(radius);
+        boundaryCircle.setPointCount(100);
+        boundaryCircle.setOrigin(radius, radius);
+        boundaryCircle.setPosition(window.getSize().x / 2.f, window.getSize().y / 2.f);
+        boundaryCircle.setFillColor(sf::Color::Black);
+    }
+    /*
     void applyCollisions(){
         const uint64_t objectCount = objectList.size();
         const float coefficientOfRestitution = 0.70f;
@@ -68,7 +73,8 @@ private:
             }
         }
     }
-
+    */
+    /*
     void applyEdgeCollisions(){
         sf::Vector2f center(boundaryCircle.getPosition());
         const float coefficientOfRestitution = 0.70f;
@@ -100,7 +106,7 @@ private:
                 object.reflectX(coefficientOfRestitution);
             }
 
-            //Right edge/
+            //Right edge
             if(pos.x > window.getSize().x - radius){
                 pos.x = window.getSize().x - radius;
                 object.reflectX(coefficientOfRestitution);
@@ -119,29 +125,53 @@ private:
             }
             object.setPosition(pos);
             globalCount++;
-            */
+            
+        }
+    }
+    */
+    void applyEdgeCollisions(){
+        for(MovingObject& obj : objectList){
+            sf::Vector2f pos = obj.getPosition();
+            float radius = obj.getRadius();
+
+            //Start detecting the objects reaching the edge
+            //Left edge
+            if(pos.x < radius){//radius is always positive
+                pos.x = radius;
+            }
+            //Right edge
+            if(pos.x > window.getSize().x - radius){
+                pos.x = window.getSize().x - radius;
+            }
+            //Top of window
+            if(pos.y < radius){
+                pos.y = radius;
+            }
+            //Bottom of window
+            if(pos.y > window.getSize().y - radius){
+                pos.y = window.getSize().y - radius;
+            }
+            obj.setPosition(pos);
         }
     }
 
 public:
     Engine(sf::RenderWindow& window) : window(window) {
+        particleVertexes.setPrimitiveType(sf::Quads);
     }
 
-    void init(int height, int width, int maxObjects){
-        objectList.reserve(maxObjects);
-        int radius = height / 2;
-        boundaryCircle.setRadius(radius);
-        boundaryCircle.setPointCount(100);
-        boundaryCircle.setOrigin(radius, radius);
-        boundaryCircle.setPosition(window.getSize().x / 2.f, window.getSize().y / 2.f);
-        boundaryCircle.setFillColor(sf::Color::Black);
-        grid.init(width, height, 5); //TODO Change cellSize to not be floating
+    void init(int height, int width, int maxObjects, int particleRadius){
+        objectList.reserve(maxObjects); 
+        //int radius = height / 2;
+        //initBoundaryCircle(radius);
+        int cellSize = (particleRadius * 2) * 1.5; //Double radius for diameter
+        grid.init(width, height, cellSize); //TODO Change cellSize to not be magic number
     }
 
     //Update all objects in objectList with new positions and variables/
     void update(float deltaT){
         //This will loop through each object, and then all other objects positions will be updated after this one moves?
-        //applyGravity();
+        applyGravity();
         updateObjects(deltaT);
         grid.applyCollisions(objectList);
         applyEdgeCollisions();
@@ -149,7 +179,6 @@ public:
         // Reset acceleration for all objects after each substep
         for (MovingObject& object : objectList) {
             object.resetAcceleration();
-            //globalCount++;
         }   
     }
 
@@ -158,11 +187,10 @@ public:
         window.draw(boundaryCircle);
         for(MovingObject& object : objectList){
             window.draw(object.getShape());
-            //globalCount++;
         }
     }
     */
-
+    /*
     void draw(){
         window.draw(boundaryCircle);
         sf::CircleShape shape;
@@ -177,22 +205,41 @@ public:
             window.draw(shape);
         }
     }
+    */
+
+    void updateParticleVisuals(){
+        particleVertexes.resize(objectList.size() * 4);
+        for(size_t i = 0; i < objectList.size(); i++){
+            const auto& object = objectList[i];
+            float r = object.getRadius();
+            sf::Vector2f pos = object.getPosition();
+            std::size_t index = i * 4;
+
+            particleVertexes[index].position = {pos.x - r, pos.y - r};
+            particleVertexes[index + 1].position = {pos.x + r, pos.y - r};
+            particleVertexes[index + 2].position = {pos.x + r, pos.y + r};
+            particleVertexes[index + 3].position = {pos.x - r, pos.y + r};
+
+            sf::Color c = sf::Color::White;
+            particleVertexes[index].color = c;
+            particleVertexes[index + 1].color = c;
+            particleVertexes[index + 2].color = c;
+            particleVertexes[index + 3].color = c;
+        }
+    }
+
+    void draw(){
+        //window.draw(boundaryCircle);
+        updateParticleVisuals();
+        window.draw(particleVertexes);
+    }
 
     MovingObject& addObject(sf::Vector2f position, float radius){    
-        /*
-        MovingObject newObject(position, radius);
-        objectList.push_back(newObject); //adding an object to vector creates new one so return back of vector 
-        return objectList.back(); 
-        */
-       objectList.emplace_back(position, radius);
-       return objectList.back();
+        objectList.emplace_back(position, radius);
+        return objectList.back();
     }
 
     int getObjectCount(){
         return objectList.size();
     }
-    /*
-    size_t getGlobalCount(){
-        return globalCount;
-    }*/
 };
