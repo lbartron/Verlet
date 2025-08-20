@@ -13,10 +13,12 @@ struct Cell {
     std::vector<int> indices;
     bool dirty = false;
 };
-float coefficientOfRestitution = 0.70f;
+float coefficientOfRestitution = 0.98f;
 int CELL_SIZE = 10;
 int GRID_WIDTH = 192;
 int GRID_HEIGHT = 108;
+int WORLD_WIDTH = 1920;
+int WORLD_HEIGHT = 1080;
 
 std::vector<Cell> grid;
 std::vector<int> dirtyCells;
@@ -36,11 +38,13 @@ void init(int width, int height, int cellSize){
     GRID_WIDTH = width / cellSize;
     GRID_HEIGHT = height / cellSize;
     CELL_SIZE = cellSize;
+    WORLD_WIDTH = width;
+    WORLD_HEIGHT = height;
     grid.resize(GRID_WIDTH * GRID_HEIGHT);
     for (auto& c : grid) c.indices.reserve(8);
     dirtyCells.reserve(GRID_WIDTH * GRID_HEIGHT / 4);
 }
-
+//
 void buildGrid(std::vector<MovingObject>& objectList){
     //Clear the dirty cells in the grid
     for(int index : dirtyCells){
@@ -51,18 +55,34 @@ void buildGrid(std::vector<MovingObject>& objectList){
 
     const float invCellSize = 1.0f / CELL_SIZE;
     //TODO refactor this eventually
+    
     for (int objIndex = 0; objIndex < objectList.size(); objIndex++) {
         auto& obj = objectList[objIndex];
         sf::Vector2f pos = obj.getPosition();
         const float r = obj.getRadius();
+        /*
+        const int x = (std::max)(0, int(pos.x * invCellSize));
+        const int y = (std::min)(GRID_HEIGHT - 1, int(pos.y * invCellSize));
 
+        if (x > 0 && x < WORLD_WIDTH - 1 && 
+            y > 0 && y < WORLD_HEIGHT - 1){
+            int cellIdx = cellIndex(x, y);
+            if(cellIdx >= 0 && cellIdx < grid.size()) {
+                if(!grid[cellIdx].dirty){
+                    grid[cellIdx].dirty = true;
+                    dirtyCells.push_back(cellIdx);
+                }
+                grid[cellIdx].indices.push_back(objIndex);
+            }
+        }
+        */
         /*
         int startX = (std::max)(0, int((pos.x - r) / CELL_SIZE));
         int endX   = (std::min)(GRID_WIDTH - 1, int((pos.x + r) / CELL_SIZE));
         int startY = (std::max)(0, int((pos.y - r) / CELL_SIZE));
         int endY   = (std::min)(GRID_HEIGHT - 1, int((pos.y + r) / CELL_SIZE));
         */
-
+        
         const int startX = (std::max)(0, int((pos.x - r) * invCellSize));
         const int endX   = (std::min)(GRID_WIDTH - 1, int((pos.x + r) * invCellSize));
         const int startY = (std::max)(0, int((pos.y - r) * invCellSize));
@@ -78,6 +98,7 @@ void buildGrid(std::vector<MovingObject>& objectList){
                 grid[cellIdx].indices.push_back(objIndex);
             }
         }
+        
     }
 }
 
@@ -91,7 +112,12 @@ void applyCollisions(std::vector<MovingObject>& objectList){
         auto& indices = grid[cellIndex].indices;
         if(indices.size() < 2) continue;
         
-        std::sort(indices.begin(), indices.end());
+      /*sort potentialaly costs more at higher particles
+        than it saves due to number of times it has to sort
+        small amounts of particles in a cell
+        TODO find more efficient way to figure out 
+        how to not do duplicate calculations*/
+        //std::sort(indices.begin(), indices.end());
 
         for(size_t i = 0; i < indices.size(); i++){
             MovingObject& a = objectList[indices[i]];
