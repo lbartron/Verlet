@@ -4,7 +4,7 @@
 
 class MovingObject {
 private:
-    sf::CircleShape shape;
+    //sf::CircleShape shape;
     sf::Vector2f position;
     sf::Vector2f lastPosition;
     sf::Vector2f acceleration;
@@ -12,15 +12,10 @@ private:
 
 public:
     MovingObject(sf::Vector2f position, float radius){
-        shape.setRadius(radius);
-        shape.setPosition(position);
-        shape.setOrigin(radius, radius);
-
         this->position = position;
         this->radius = radius;
         lastPosition = position;
         acceleration = {0.0f, 0.0f};
-        shape.setPointCount(8); //optimize for fps
     }
 
     void update(float deltaT){
@@ -28,7 +23,7 @@ public:
         sf::Vector2f displacement = position - lastPosition;
         lastPosition = position;
         position += displacement + acceleration * (deltaT * deltaT);
-        shape.setPosition(position);
+        //shape.setPosition(position);
     }
 
     void reflectX(float COR){
@@ -56,18 +51,18 @@ public:
 
     void setPosition(sf::Vector2f newPosition){
         position = newPosition;
-        shape.setPosition(newPosition);
+        //shape.setPosition(newPosition);
     }
-
+    /*
     sf::CircleShape& getShape(){
         return shape;
-    }
+    }*/
 
-    sf::Vector2f getPosition(){
+    sf::Vector2f getPosition() const{
         return position;
     }
 
-    float getRadius(){
+    float getRadius() const{
         return radius;
     }
 };
