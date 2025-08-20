@@ -11,15 +11,10 @@
 
 int main()
 {
-    //temp to find src file/
-    /*
-    char cwd[1024];
-    if (GetCurrentDirectoryA(sizeof(cwd), cwd))
-        std::cout << "Current working directory: " << cwd << std::endl;
-    */
     const int windowHeight = 1080;
     const int windowWidth = 1920;
-    const int maxObjects = 12000;
+    const int maxObjects = 20000;
+    const int particleRadius = 5;
 
     sf::ContextSettings settings;
     //for smoothing out jagged edges of shapes
@@ -31,17 +26,17 @@ int main()
     window.setVerticalSyncEnabled(true);
 
     Engine engine(window);
-    engine.init(windowHeight, windowWidth, maxObjects);
+    engine.init(windowHeight, windowWidth, maxObjects, particleRadius);
 
     //Add Rng object and position object
     Rng random;
-    sf::Vector2f position = {windowWidth / 2, 50};
+    sf::Vector2f position = {10, 50};
 
     //Add timing elements
     sf::Clock clock;
     float accumulator = 0.0f;
-    const float fixedDeltaT = 1.0f / 180.0f; //180 Hz physics
-    const float spawnInterval = 0.0025f;
+    const float fixedDeltaT = 1.0f / 480.0f; //180 Hz physics
+    const float spawnInterval = 0.0015f;
     //float spawnTimer = 0.0f;
     double lastSpawnTime = 0.0;
 
@@ -53,7 +48,6 @@ int main()
     sf::Font font;
     
     std::string fontPath = "../../../fonts/arial.ttf";
-    //std::string fontPath = "fonts/arial.ttf";
     std::cout << "Loading font from: " << fontPath << std::endl;
     if (!font.loadFromFile(fontPath)) {
         std::cout << "Error loading font\n";
@@ -62,7 +56,7 @@ int main()
     sf::Text infoText;
     infoText.setFont(font);
     infoText.setCharacterSize(16);
-    infoText.setFillColor(sf::Color::Black);
+    infoText.setFillColor(sf::Color::White);
     infoText.setPosition(10.f, 10.f);
     
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -108,7 +102,7 @@ int main()
             accumulator -= fixedDeltaT;
             substeps++;
         }
-        //std::cout << "The substep count was: " << substeps << std::endl;
+        //std::cout << "The substep count was: " << substeps << "\n";
 
         if(substeps == maxSubsteps){
             accumulator = 0.0f;
@@ -121,9 +115,11 @@ int main()
         const int batchSize = 10;
         if(engine.getObjectCount() <= maxObjects && (elapsedSeconds - lastSpawnTime) >= spawnInterval){
             for(int i = 0; i < batchSize && engine.getObjectCount() < maxObjects; i++){
-                MovingObject& temp = engine.addObject(position, random.randint(3, 5));
-                float x = random.randint(-500,500);
-                float y = random.randint(50, 300);
+                //position.y = random.randint(50, 55);
+                sf::Vector2f newPosition = {position.x, position.y + (i * 12)};
+                MovingObject& temp = engine.addObject(newPosition, particleRadius);//random.randint(1, 2));
+                float x = 1500; //random.randint(0,100);
+                float y = 0; //random.randint(50, 300);
                 temp.setVelocity(sf::Vector2f{x, y}, fixedDeltaT);
                 //sf::Color customColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255));
                 //temp.getShape().setFillColor(customColor);
@@ -133,34 +129,12 @@ int main()
         }
         //start = std::chrono::high_resolution_clock::now();
 
-        window.clear(sf::Color::White);
+        window.clear(sf::Color::Black);
         engine.draw();
         //end = std::chrono::high_resolution_clock::now();
         //fps = (float)1e9/(float)std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count();
-        /*
-        if(fps < lowestFps){
-            lowestFps = fps;
-        }
-        */
-        
-        /*
-        std::ostringstream ss;
-        ss << fps;
-
-        sf::Text atext;
-        atext.setFont(font);
-        atext.setCharacterSize(20);
-        atext.setStyle(sf::Text::Bold);
-        atext.setColor(sf::Color::Black);
-        atext.setPosition(0,0);
-        atext.setString(ss.str());
-        window.draw(atext);
-        */
-        //std::cout << engine.getObjectCount() << " Objects \n";
         window.draw(infoText);
         window.display();
     }
-    //std::cout << "The lowest fps was " << lowestFps << std::endl;
-    //std::cout << "The loop count was " << engine.getGlobalCount() << std::endl;
     return 0;
 }
