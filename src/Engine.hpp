@@ -24,7 +24,8 @@ private:
 
     void applyGravity(){
         for(MovingObject& object : objectList){
-            object.addAcceleration(gravity);
+            //object.addAcceleration(gravity);
+            object.setAcceleration(gravity);
         }
     }
 
@@ -130,6 +131,8 @@ private:
     }
     */
     void applyEdgeCollisions(){
+        const auto windowX = window.getSize().x;
+        const auto windowY = window.getSize().y;
         for(MovingObject& obj : objectList){
             sf::Vector2f pos = obj.getPosition();
             float radius = obj.getRadius();
@@ -140,16 +143,16 @@ private:
                 pos.x = radius;
             }
             //Right edge
-            if(pos.x > window.getSize().x - radius){
-                pos.x = window.getSize().x - radius;
+            if(pos.x > windowX - radius){
+                pos.x = windowX - radius;
             }
             //Top of window
             if(pos.y < radius){
                 pos.y = radius;
             }
             //Bottom of window
-            if(pos.y > window.getSize().y - radius){
-                pos.y = window.getSize().y - radius;
+            if(pos.y > windowY - radius){
+                pos.y = windowY - radius;
             }
             obj.setPosition(pos);
         }
@@ -165,7 +168,7 @@ public:
         //int radius = height / 2;
         //initBoundaryCircle(radius);
         int cellSize = (particleRadius * 2) * 1.5; //Double radius for diameter
-        grid.init(width, height, cellSize); //TODO Change cellSize to not be magic number
+        grid.init(width, height, cellSize);
     }
 
     //Update all objects in objectList with new positions and variables/
@@ -177,9 +180,11 @@ public:
         applyEdgeCollisions();
 
         // Reset acceleration for all objects after each substep
+        /*
         for (MovingObject& object : objectList) {
             object.resetAcceleration();
         }   
+        */
     }
 
     /*
@@ -220,7 +225,7 @@ public:
             particleVertexes[index + 2].position = {pos.x + r, pos.y + r};
             particleVertexes[index + 3].position = {pos.x - r, pos.y + r};
 
-            sf::Color c = sf::Color::White;
+            sf::Color c = object.getColor();
             particleVertexes[index].color = c;
             particleVertexes[index + 1].color = c;
             particleVertexes[index + 2].color = c;
@@ -234,8 +239,8 @@ public:
         window.draw(particleVertexes);
     }
 
-    MovingObject& addObject(sf::Vector2f position, float radius){    
-        objectList.emplace_back(position, radius);
+    MovingObject& addObject(sf::Vector2f position, float radius, sf::Color color){    
+        objectList.emplace_back(position, radius, color);
         return objectList.back();
     }
 
