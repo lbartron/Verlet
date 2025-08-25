@@ -1,20 +1,21 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <cstdint>
-#include <cmath>
 #include "MovingObject.hpp"
 #include "GridCollision.hpp"
 
 class Engine{
 private:
     std::vector<MovingObject> objectList;
-    sf::Vector2f gravity = {0, 750};
+    sf::Vector2f gravity = {0, 1000};
     sf::RenderWindow& window;
     sf::CircleShape boundaryCircle;
     GridCollision grid;
     float boundaryRadius = (window.getSize().y / 2.f);
     sf::VertexArray particleVertexes;
+    int cellSize = 0;
+    int worldHeight = 0;
+    int worldWidth = 0;
 
     void updateObjects(float deltaT){
         for(MovingObject& object : objectList){
@@ -36,6 +37,107 @@ private:
         boundaryCircle.setPosition(window.getSize().x / 2.f, window.getSize().y / 2.f);
         boundaryCircle.setFillColor(sf::Color::Black);
     }
+
+    void applyEdgeCollisions(){
+        const auto windowX = worldWidth; //window.getSize().x;
+        const auto windowY = worldHeight; //window.getSize().y;
+        const float COR = 0.f;
+        for(MovingObject& obj : objectList){
+            sf::Vector2f pos = obj.getPosition();
+            sf::Vector2f last = obj.getLastPosition();
+            sf::Vector2f vel = pos-last;
+            float radius = obj.getRadius();
+
+            //Start detecting the objects reaching the edge
+            // Left
+            if(pos.x < radius){
+                pos.x = radius;
+                if(vel.x < 0) last.x = pos.x + vel.x * COR; // reflect x
+            }
+            // Right
+            if(pos.x > windowX - radius){
+                pos.x = windowX - radius;
+                if(vel.x > 0) last.x = pos.x + vel.x * COR;
+            }
+            // Top
+            if(pos.y < radius){
+                pos.y = radius;
+                if(vel.y < 0) last.y = pos.y + vel.y * COR; // reflect y
+            }
+            // Bottom
+            if(pos.y > windowY - radius){
+                pos.y = windowY - radius;
+                if(vel.y > 0) last.y = pos.y + vel.y * COR;
+            }
+            obj.setPosition(pos);
+            obj.setLastPosition(last);
+        }
+    }
+
+    
+    void updateParticleVisuals(){
+        particleVertexes.resize(objectList.size() * 4);
+        for(size_t i = 0; i < objectList.size(); i++){
+            const auto& object = objectList[i];
+            float r = object.getRadius();
+            sf::Vector2f pos = object.getPosition();
+            std::size_t index = i * 4;
+
+            particleVertexes[index].position = {pos.x - r, pos.y - r};
+            particleVertexes[index + 1].position = {pos.x + r, pos.y - r};
+            particleVertexes[index + 2].position = {pos.x + r, pos.y + r};
+            particleVertexes[index + 3].position = {pos.x - r, pos.y + r};
+
+            sf::Color c = object.getColor();
+            particleVertexes[index].color = c;
+            particleVertexes[index + 1].color = c;
+            particleVertexes[index + 2].color = c;
+            particleVertexes[index + 3].color = c;
+        }
+    }
+
+public:
+    Engine(sf::RenderWindow& window) : window(window) {
+        particleVertexes.setPrimitiveType(sf::Quads);
+    }
+
+    void init(int height, int width, int maxObjects, int particleRadius){
+        objectList.reserve(maxObjects); 
+        //int radius = height / 2;
+        //initBoundaryCircle(radius);
+        int cellSize = (particleRadius * 2) * 1.5; //Double radius for diameter
+        this->cellSize = cellSize;
+        worldWidth = width;
+        worldHeight = height;
+        grid.init(width, height, cellSize);
+    }
+
+    //Update all objects in objectList with new positions and variables/
+    void update(float deltaT){
+        //Sets accel to what gravity is 
+        //This also saves resetting accel at the end of an update
+        applyGravity();
+        updateObjects(deltaT);
+        grid.applyCollisions(objectList);
+        applyEdgeCollisions();
+    }
+
+    void draw(){
+        //window.draw(boundaryCircle);
+        updateParticleVisuals();
+        window.draw(particleVertexes);
+    }
+
+    MovingObject& addObject(sf::Vector2f position, float radius, sf::Color color){    
+        objectList.emplace_back(position, radius, color);
+        return objectList.back();
+    }
+
+    int getObjectCount(){
+        return objectList.size();
+    }
+};
+
     /*
     void applyCollisions(){
         const uint64_t objectCount = objectList.size();
@@ -130,121 +232,3 @@ private:
         }
     }
     */
-    void applyEdgeCollisions(){
-        const auto windowX = window.getSize().x;
-        const auto windowY = window.getSize().y;
-        for(MovingObject& obj : objectList){
-            sf::Vector2f pos = obj.getPosition();
-            float radius = obj.getRadius();
-
-            //Start detecting the objects reaching the edge
-            //Left edge
-            if(pos.x < radius){//radius is always positive
-                pos.x = radius;
-            }
-            //Right edge
-            if(pos.x > windowX - radius){
-                pos.x = windowX - radius;
-            }
-            //Top of window
-            if(pos.y < radius){
-                pos.y = radius;
-            }
-            //Bottom of window
-            if(pos.y > windowY - radius){
-                pos.y = windowY - radius;
-            }
-            obj.setPosition(pos);
-        }
-    }
-
-public:
-    Engine(sf::RenderWindow& window) : window(window) {
-        particleVertexes.setPrimitiveType(sf::Quads);
-    }
-
-    void init(int height, int width, int maxObjects, int particleRadius){
-        objectList.reserve(maxObjects); 
-        //int radius = height / 2;
-        //initBoundaryCircle(radius);
-        int cellSize = (particleRadius * 2) * 1.5; //Double radius for diameter
-        grid.init(width, height, cellSize);
-    }
-
-    //Update all objects in objectList with new positions and variables/
-    void update(float deltaT){
-        //This will loop through each object, and then all other objects positions will be updated after this one moves?
-        applyGravity();
-        updateObjects(deltaT);
-        grid.applyCollisions(objectList);
-        applyEdgeCollisions();
-
-        // Reset acceleration for all objects after each substep
-        /*
-        for (MovingObject& object : objectList) {
-            object.resetAcceleration();
-        }   
-        */
-    }
-
-    /*
-    void draw(){
-        window.draw(boundaryCircle);
-        for(MovingObject& object : objectList){
-            window.draw(object.getShape());
-        }
-    }
-    */
-    /*
-    void draw(){
-        window.draw(boundaryCircle);
-        sf::CircleShape shape;
-        shape.setPointCount(8);
-        shape.setFillColor(sf::Color::White);
-        
-        for(const auto& object : objectList){
-            float radius = object.getRadius();
-            shape.setRadius(radius);
-            shape.setOrigin(radius, radius);
-            shape.setPosition(object.getPosition());
-            window.draw(shape);
-        }
-    }
-    */
-
-    void updateParticleVisuals(){
-        particleVertexes.resize(objectList.size() * 4);
-        for(size_t i = 0; i < objectList.size(); i++){
-            const auto& object = objectList[i];
-            float r = object.getRadius();
-            sf::Vector2f pos = object.getPosition();
-            std::size_t index = i * 4;
-
-            particleVertexes[index].position = {pos.x - r, pos.y - r};
-            particleVertexes[index + 1].position = {pos.x + r, pos.y - r};
-            particleVertexes[index + 2].position = {pos.x + r, pos.y + r};
-            particleVertexes[index + 3].position = {pos.x - r, pos.y + r};
-
-            sf::Color c = object.getColor();
-            particleVertexes[index].color = c;
-            particleVertexes[index + 1].color = c;
-            particleVertexes[index + 2].color = c;
-            particleVertexes[index + 3].color = c;
-        }
-    }
-
-    void draw(){
-        //window.draw(boundaryCircle);
-        updateParticleVisuals();
-        window.draw(particleVertexes);
-    }
-
-    MovingObject& addObject(sf::Vector2f position, float radius, sf::Color color){    
-        objectList.emplace_back(position, radius, color);
-        return objectList.back();
-    }
-
-    int getObjectCount(){
-        return objectList.size();
-    }
-};
