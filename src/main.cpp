@@ -3,16 +3,33 @@
 #include <chrono>
 #include <sstream>
 #include <string>
-#include <windows.h> //temp to find src file
+//#include <windows.h> //temp to find src file
 #include <SFML/Graphics.hpp>
 
 #include "Engine.hpp"
 #include "Rng.hpp"
 
+inline sf::Color makeColor(float t){
+    constexpr float TAU = 6.28318530718f;
+    // Three phased sin waves mapped to 0..1
+    float r = 0.5f + 0.5f * std::sin((t + 0.00f) * TAU);
+    float g = 0.5f + 0.5f * std::sin((t + 0.33f) * TAU);
+    float b = 0.5f + 0.5f * std::sin((t + 0.66f) * TAU);
+    // Optional slight gamma to boost brightness (gamma < 1 brightens)
+    auto toByte = [](float c){
+        c = std::pow(c, 0.8f); // brighten (remove or adjust if too strong)
+        if(c < 0.f) c = 0.f; else if(c > 1.f) c = 1.f;
+        return static_cast<sf::Uint8>(c * 255.f + 0.5f);
+    };
+    return {toByte(r), toByte(g), toByte(b)};
+}
+
 int main()
 {
     const int windowHeight = 1080;
     const int windowWidth = 1920;
+    const int worldWidth = windowWidth * 2;
+    const int worldHeight = windowHeight * 2;
     const int maxObjects = 20000;
     const int particleRadius = 5;
 
@@ -22,11 +39,16 @@ int main()
 
     //Create render window and set framerate
     auto window = sf::RenderWindow(sf::VideoMode({windowWidth, windowHeight}), "Verlet Physics Simulator",sf::Style::Default, settings);
-    //window.setFramerateLimit(60);
-    window.setVerticalSyncEnabled(true);
+    window.setFramerateLimit(65);
+    //window.setVerticalSyncEnabled(true);
+
+    //sf::View view = window.getDefaultView();
+    sf::View view(sf::FloatRect(0,0,worldWidth, worldHeight));
+    //view.zoom(2.0f);
+    window.setView(view);
 
     Engine engine(window);
-    engine.init(windowHeight, windowWidth, maxObjects, particleRadius);
+    engine.init(worldHeight, worldWidth, maxObjects, particleRadius);
 
     //Add Rng object and position object
     Rng random;
@@ -36,12 +58,12 @@ int main()
     sf::Clock clock;
     float accumulator = 0.0f;
     const float fixedDeltaT = 1.0f / 480.0f; //180 Hz physics
-    const float spawnInterval = 0.0015f;
+    const float spawnInterval = 0.0050f;
     //float spawnTimer = 0.0f;
     double lastSpawnTime = 0.0;
 
     
-    //FPS counter/
+    //FPS counter
     sf::Clock fpsClock;
     int frameCount = 0;
     float fps = 0.f;
@@ -55,12 +77,16 @@ int main()
     }
     sf::Text infoText;
     infoText.setFont(font);
-    infoText.setCharacterSize(16);
+    infoText.setCharacterSize(48);
     infoText.setFillColor(sf::Color::White);
     infoText.setPosition(10.f, 10.f);
     
     auto startTime = std::chrono::high_resolution_clock::now();
     const int maxSubsteps = 8;
+    uint16_t spawnIndex = 0;
+
+    //const float targetFrame = 1.f / 120.f; // cap render to 120 FPS (adjust)
+    //sf::Clock frameCapClock;
     while (window.isOpen())
     {
         sf::Event event;
@@ -105,23 +131,26 @@ int main()
         //std::cout << "The substep count was: " << substeps << "\n";
 
         if(substeps == maxSubsteps){
-            accumulator = 0.0f;
+            // Just clamp leftover so we keep “owed” time without runaway
+            accumulator = std::min(accumulator, fixedDeltaT * (float)maxSubsteps);
         }
 
         auto now = std::chrono::high_resolution_clock::now();
         double elapsedSeconds = std::chrono::duration<double>(now - startTime).count();
 
         //spawnTimer >= spawnInterval
-        const int batchSize = 10;
-        if(engine.getObjectCount() <= maxObjects && (elapsedSeconds - lastSpawnTime) >= spawnInterval){
+        const int batchSize = 20;
+        if(fps >= 60.0f && engine.getObjectCount() <= maxObjects && (elapsedSeconds - lastSpawnTime) >= spawnInterval){
             for(int i = 0; i < batchSize && engine.getObjectCount() < maxObjects; i++){
                 //position.y = random.randint(50, 55);
-                sf::Vector2f newPosition = {position.x, position.y + (i * 12)};
-                MovingObject& temp = engine.addObject(newPosition, particleRadius);//random.randint(1, 2));
-                float x = 1500; //random.randint(0,100);
-                float y = 0; //random.randint(50, 300);
+                sf::Vector2f newPosition = {position.x, position.y + (i * (particleRadius * 2))};
+                sf::Color customColor = makeColor(spawnIndex * 0.0002);
+                //sf::Color customColor = sf::Color::White;
+                spawnIndex++;
+                MovingObject& temp = engine.addObject(newPosition, particleRadius, customColor);//random.randint(1, 2));
+                float x = 2500; //random.randint(0,100);
+                float y = 200; //random.randint(50, 300);
                 temp.setVelocity(sf::Vector2f{x, y}, fixedDeltaT);
-                //sf::Color customColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255));
                 //temp.getShape().setFillColor(customColor);
                 //spawnTimer = 0.0f;
                 lastSpawnTime = elapsedSeconds;
@@ -135,6 +164,15 @@ int main()
         //fps = (float)1e9/(float)std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count();
         window.draw(infoText);
         window.display();
+
+        // Manual frame cap (only if vsync disabled)
+        /*
+        float frameElapsed = frameCapClock.getElapsedTime().asSeconds();
+        if(frameElapsed < targetFrame){
+            sf::sleep(sf::seconds(targetFrame - frameElapsed));
+        }
+        frameCapClock.restart();
+        */
     }
     return 0;
 }
