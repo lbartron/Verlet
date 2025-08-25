@@ -1,9 +1,6 @@
-#include <optional>
 #include <iostream>
 #include <chrono>
-#include <sstream>
 #include <string>
-//#include <windows.h> //temp to find src file
 #include <SFML/Graphics.hpp>
 
 #include "Engine.hpp"
@@ -28,8 +25,8 @@ int main()
 {
     const int windowHeight = 1080;
     const int windowWidth = 1920;
-    const int worldWidth = windowWidth * 2;
-    const int worldHeight = windowHeight * 2;
+    const int worldWidth = windowWidth;
+    const int worldHeight = windowHeight;
     const int maxObjects = 20000;
     const int particleRadius = 5;
 
@@ -148,7 +145,7 @@ int main()
                 //sf::Color customColor = sf::Color::White;
                 spawnIndex++;
                 MovingObject& temp = engine.addObject(newPosition, particleRadius, customColor);//random.randint(1, 2));
-                float x = 2500; //random.randint(0,100);
+                float x = 1500; //random.randint(0,100);
                 float y = 200; //random.randint(50, 300);
                 temp.setVelocity(sf::Vector2f{x, y}, fixedDeltaT);
                 //temp.getShape().setFillColor(customColor);

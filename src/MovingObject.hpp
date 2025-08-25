@@ -4,7 +4,6 @@
 
 class MovingObject {
 private:
-    //sf::CircleShape shape;
     sf::Vector2f position;
     sf::Vector2f lastPosition;
     sf::Vector2f acceleration;
@@ -25,7 +24,6 @@ public:
         sf::Vector2f displacement = position - lastPosition;
         lastPosition = position;
         position += displacement + acceleration * (deltaT * deltaT);
-        //shape.setPosition(position);
     }
 
     void reflectX(float COR){
@@ -63,10 +61,6 @@ public:
     void setLastPosition(sf::Vector2f newPosition){
         lastPosition = newPosition;
     }
-    /*
-    sf::CircleShape& getShape(){
-        return shape;
-    }*/
 
     sf::Color getColor() const{
         return color;

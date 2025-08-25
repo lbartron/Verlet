@@ -1,8 +1,5 @@
 #pragma once
 #include <vector>
-#include <cmath>
-#include <algorithm>
-#include <cstdint>
 #include <SFML/System/Vector2.hpp>
 
 #include "MovingObject.hpp"
