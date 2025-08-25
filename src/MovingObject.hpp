@@ -9,13 +9,15 @@ private:
     sf::Vector2f lastPosition;
     sf::Vector2f acceleration;
     float radius;
+    sf::Color color;
 
 public:
-    MovingObject(sf::Vector2f position, float radius){
+    MovingObject(sf::Vector2f position, float radius, sf::Color color){
         this->position = position;
         this->radius = radius;
         lastPosition = position;
         acceleration = {0.0f, 0.0f};
+        this->color = color;
     }
 
     void update(float deltaT){
@@ -45,6 +47,10 @@ public:
         acceleration += newAcceleration;
     }
 
+    void setAcceleration(sf::Vector2f newAcceleration){
+        acceleration = newAcceleration;
+    }
+
     void resetAcceleration(){
         acceleration = {0.0f, 0.0f};
     }
@@ -53,13 +59,25 @@ public:
         position = newPosition;
         //shape.setPosition(newPosition);
     }
+
+    void setLastPosition(sf::Vector2f newPosition){
+        lastPosition = newPosition;
+    }
     /*
     sf::CircleShape& getShape(){
         return shape;
     }*/
 
+    sf::Color getColor() const{
+        return color;
+    }
+
     sf::Vector2f getPosition() const{
         return position;
+    }
+
+    sf::Vector2f getLastPosition() const{
+        return lastPosition;
     }
 
     float getRadius() const{
